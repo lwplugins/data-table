@@ -12,17 +12,24 @@
 .lw-table {
 	--lw-table-accent: var(--wp-admin-theme-color, #3858e9);
 	--lw-table-text: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+	/* 4.9:1 on white (WCAG 1.4.3). */
 	--lw-table-muted: var(--wpds-color-foreground-content-neutral-weak, #707070);
-	--lw-table-border: var(--wpds-color-stroke-surface-neutral, #ddd);
+	/* Control outlines 3:1 (WCAG 1.4.11); dividers may stay faint. */
+	--lw-table-control: var(--wpds-color-stroke-interactive-neutral, #8c8f94);
 	--lw-table-border-weak: var(--wpds-color-stroke-surface-neutral-weak, #f0f0f0);
 	--lw-table-surface: var(--wpds-color-background-surface-neutral-strong, #fff);
 	--lw-table-hover: var(--wpds-color-background-surface-neutral-weak, #f6f7f7);
+	--lw-table-selected: var(--wpds-color-background-surface-brand, #eef2fd);
+	--lw-table-error: var(--wpds-color-foreground-content-error, #cc1818);
+	--lw-table-error-bg: var(--wpds-color-background-surface-error-weak, #fcf0f1);
 
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 	color: var(--lw-table-text);
 }
+
+/* Toolbar ------------------------------------------------------------------ */
 
 .lw-table__toolbar {
 	display: flex;
@@ -42,9 +49,18 @@
 	gap: 6px;
 }
 
+.lw-table__chips-label {
+	color: var(--lw-table-muted);
+	font-size: 12px;
+}
+
 .lw-table__chip {
-	padding: 4px 10px;
-	border: 1px solid var(--lw-table-border);
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	min-height: 28px; /* ≥ 24px target (WCAG 2.5.8) */
+	padding: 0 10px;
+	border: 1px solid var(--lw-table-control);
 	border-radius: 999px;
 	background: var(--lw-table-surface);
 	color: var(--lw-table-text);
@@ -57,6 +73,7 @@
 	border-color: var(--lw-table-accent);
 }
 
+/* Pressed = colour + fill + check icon, never colour alone. */
 .lw-table__chip[aria-pressed="true"] {
 	border-color: var(--lw-table-accent);
 	background: var(--lw-table-accent);
@@ -64,13 +81,77 @@
 }
 
 .lw-table__chip:focus-visible,
-.lw-table th button:focus-visible {
+.lw-table th button:focus-visible,
+.lw-table__scroll:focus-visible,
+.lw-table__check:focus-visible,
+.lw-table__bulk-count:focus-visible {
 	outline: 2px solid var(--lw-table-accent);
 	outline-offset: 2px;
 }
 
+.lw-table__select .components-select-control__input {
+	min-height: 28px;
+}
+
+.lw-table__slot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.lw-table__paging {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	color: var(--lw-table-muted);
+	font-size: 12px;
+}
+
+.lw-table__toolbar .lw-table__paging {
+	margin-inline-start: auto;
+}
+
+.lw-table__pager {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+/* Bulk actions --------------------------------------------------------------- */
+
+.lw-table__bulk {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-radius: 6px;
+	background: var(--lw-table-selected);
+}
+
+.lw-table__bulk-count {
+	margin-inline-end: 4px;
+	font-weight: 600;
+}
+
+.lw-table__bulk-note {
+	margin-inline-start: 4px;
+	font-weight: 400;
+	opacity: 0.85;
+}
+
+/* Table ---------------------------------------------------------------------- */
+
 .lw-table__scroll {
 	overflow-x: auto;
+	border-radius: 2px;
+}
+
+.lw-table__scroll.is-loading tbody {
+	opacity: 0.55;
+	transition: opacity 0.15s;
 }
 
 .lw-table table {
@@ -79,7 +160,8 @@
 	font-size: 13px;
 }
 
-.lw-table__caption {
+.lw-table__caption,
+.lw-table__live {
 	position: absolute;
 	width: 1px;
 	height: 1px;
@@ -92,13 +174,13 @@
 .lw-table td {
 	padding: 10px 12px;
 	border-bottom: 1px solid var(--lw-table-border-weak);
-	text-align: left;
+	text-align: start;
 	vertical-align: middle;
 }
 
 .lw-table th.is-end,
 .lw-table td.is-end {
-	text-align: right;
+	text-align: end;
 	white-space: nowrap;
 }
 
@@ -138,6 +220,51 @@
 	background: var(--lw-table-hover);
 }
 
+.lw-table tbody tr.is-selected {
+	background: var(--lw-table-selected);
+}
+
+.lw-table .lw-table__select-cell {
+	width: 1%;
+	padding-inline-end: 0;
+}
+
+.lw-table__check {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--lw-table-accent);
+}
+
+/* Shown only in the mobile card layout. */
+.lw-table__cell-label {
+	display: none;
+}
+
+.lw-table__flip {
+	display: block;
+}
+
+[dir="rtl"] .lw-table__flip {
+	transform: scaleX(-1);
+}
+
+/* States --------------------------------------------------------------------- */
+
+.lw-table__skeleton span {
+	display: block;
+	height: 10px;
+	border-radius: 3px;
+	background: var(--lw-table-hover);
+	animation: lw-table-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes lw-table-pulse {
+	50% {
+		opacity: 0.45;
+	}
+}
+
 .lw-table__empty {
 	margin: 0;
 	padding: 32px 0;
@@ -145,63 +272,110 @@
 	text-align: center;
 }
 
+.lw-table__error {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin-top: 12px;
+	padding: 16px;
+	border-radius: 6px;
+	background: var(--lw-table-error-bg);
+	color: var(--lw-table-error);
+}
+
+.lw-table__error p {
+	margin: 0;
+}
+
 .lw-table__foot {
 	display: flex;
-	align-items: center;
+	justify-content: flex-end;
+}
+
+.lw-table__foot .lw-table__paging {
+	flex: 1;
 	justify-content: space-between;
-	color: var(--lw-table-muted);
-	font-size: 12px;
 }
 
-.lw-table__top-pager {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin-left: auto;
-	color: var(--lw-table-muted);
-	font-size: 12px;
+@media (prefers-reduced-motion: reduce) {
+	.lw-table__skeleton span {
+		animation: none;
+	}
+
+	.lw-table__scroll.is-loading tbody {
+		transition: none;
+	}
 }
 
-.lw-table__pager {
-	display: flex;
-	align-items: center;
-	gap: 4px;
+/* Windows High Contrast / forced colours: box-shadows and backgrounds vanish,
+   so pressed, selected and focus states use system colours. */
+@media (forced-colors: active) {
+	.lw-table__chip[aria-pressed="true"] {
+		border: 2px solid Highlight;
+		background: Highlight;
+		color: HighlightText;
+	}
+
+	.lw-table tbody tr.is-selected {
+		outline: 2px solid Highlight;
+		outline-offset: -2px;
+	}
+
+	.lw-table__chip:focus-visible,
+	.lw-table th button:focus-visible,
+	.lw-table__scroll:focus-visible,
+	.lw-table__check:focus-visible {
+		outline-color: Highlight;
+	}
 }
 
-/* Mobile (WP admin breakpoint): each row becomes a card. */
+/* Mobile (WP admin breakpoint): each row becomes a card. The explicit table
+   roles in the markup keep the semantics despite display: block, and each
+   cell shows its column name in an aria-hidden label element. */
 @media (max-width: 782px) {
-	.lw-table thead {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
+	.lw-table thead tr {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		border-bottom: 1px solid var(--lw-table-border-weak);
+	}
+
+	.lw-table thead th {
+		padding: 6px 0;
+		border: 0;
+	}
+
+	.lw-table thead th:not([aria-sort]):not(.lw-table__select-cell):not(:has(button)) {
+		display: none;
 	}
 
 	.lw-table table,
 	.lw-table tbody,
-	.lw-table tr,
-	.lw-table td {
+	.lw-table tbody tr,
+	.lw-table tbody td {
 		display: block;
 	}
 
-	.lw-table tr {
+	.lw-table tbody tr {
+		position: relative;
 		padding: 10px 0;
 		border-bottom: 1px solid var(--lw-table-border-weak);
 	}
 
-	.lw-table td,
-	.lw-table td.is-end {
+	.lw-table tbody td,
+	.lw-table tbody td.is-end {
 		display: flex;
 		justify-content: space-between;
 		gap: 12px;
 		padding: 4px 0;
 		border: 0;
-		text-align: left;
+		text-align: start;
 	}
 
-	.lw-table td::before {
-		content: attr(data-label);
+	.lw-table__cell-label {
+		display: block;
 		flex-shrink: 0;
 		color: var(--lw-table-muted);
 		font-size: 11px;
@@ -209,13 +383,17 @@
 		text-transform: uppercase;
 	}
 
+	.lw-table tbody td.lw-table__select-cell {
+		width: auto;
+	}
+
 	.lw-table__toolbar .components-search-control {
 		flex-basis: 100%;
 	}
 
-	.lw-table__top-pager {
+	.lw-table__toolbar .lw-table__paging {
 		justify-content: space-between;
 		width: 100%;
-		margin-left: 0;
+		margin-inline-start: 0;
 	}
 }

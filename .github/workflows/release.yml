@@ -55,6 +55,7 @@ jobs:
           npm run lint
           npm test
           npm run build
+          npm run size
 
       - name: Publish to npm
         if: steps.check.outputs.exists == 'false'

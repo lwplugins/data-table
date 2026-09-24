@@ -7,70 +7,37 @@ import { useMemo, useState } from '@wordpress/element';
  * Internal dependencies
  */
 import { filterSortPaginate } from './filter-sort-paginate.js';
+import { DEFAULT_QUERY, createTableApi } from './query.js';
 
 /**
- * Client-side table state for <DataTable>: search, one "any of" filter,
- * sorting and paging. Any change to what is shown returns to page 1.
+ * Client-side table state for <DataTable>: search, filters, sorting, paging.
  *
  * @param {Array}  rows                 All rows (null/undefined while loading).
  * @param {Object} options
  * @param {Array}  options.searchFields Row keys the search looks in.
- * @param {string} options.filterField  Row key the filter chips apply to.
- * @param {Object} options.sort         Initial { field, direction }.
- * @param {number} options.perPage      Rows per page (default 20).
- * @return {Object} Visible rows, totals and setters.
+ * @param {Array}  options.columns      Columns (for `sortValue` / `searchValue`).
+ * @param {Object} options.sort         Initial sort { field, direction }.
+ * @param {number} options.perPage      Initial rows per page (default 20).
+ * @param {Object} options.filters      Initial filters { [field]: values }.
+ * @return {Object} Table API: visible rows, totals, query and setters.
  */
 export function useTableState( rows, options = {} ) {
-	const { sort: initialSort, searchFields, filterField, perPage } = options;
-	const [ search, setSearch ] = useState( '' );
-	const [ filter, setFilter ] = useState( [] );
-	const [ sort, setSort ] = useState( initialSort );
-	const [ page, setPage ] = useState( 1 );
+	const { searchFields = [], columns = [], sort, perPage, filters } = options;
+	const [ query, setQuery ] = useState( () => ( {
+		...DEFAULT_QUERY,
+		sort,
+		perPage: perPage ?? DEFAULT_QUERY.perPage,
+		filters: filters ?? {},
+	} ) );
 	// Compared by content, so inline arrays do not recompute every render.
-	const searchKey = String( searchFields );
+	const searchKey = searchFields.join( '|' );
 
 	const result = useMemo(
-		() =>
-			filterSortPaginate(
-				rows,
-				{ search, filter, sort, page },
-				{ searchFields, filterField, perPage }
-			),
+		() => filterSortPaginate( rows, query, { searchFields, columns } ),
 		// searchFields is tracked through searchKey (by content).
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[ rows, search, filter, sort, page, filterField, perPage, searchKey ]
+		[ rows, query, searchKey, columns ]
 	);
 
-	return {
-		...result,
-		setPage,
-		search,
-		setSearch: ( value ) => {
-			setSearch( value );
-			setPage( 1 );
-		},
-		filter,
-		toggleFilter: ( value ) => {
-			setFilter( ( prev ) =>
-				prev.includes( value )
-					? prev.filter( ( item ) => item !== value )
-					: [ ...prev, value ]
-			);
-			setPage( 1 );
-		},
-		clearFilter: () => {
-			setFilter( [] );
-			setPage( 1 );
-		},
-		sort,
-		// Same column flips direction; a new column starts descending.
-		toggleSort: ( field ) =>
-			setSort( ( prev ) => ( {
-				field,
-				direction:
-					prev?.field === field && prev.direction === 'desc'
-						? 'asc'
-						: 'desc',
-			} ) ),
-	};
+	return createTableApi( query, setQuery, result );
 }

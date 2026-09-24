@@ -6,7 +6,7 @@ import { Button } from '@wordpress/components';
 /**
  * Internal dependencies
  */
-import { ChevronLeft, ChevronRight } from './icons.js';
+import { ChevronLeft, ChevronRight } from '../icons.js';
 
 /**
  * Previous / "Page x of y" / next. Rendered above and/or below the table.
