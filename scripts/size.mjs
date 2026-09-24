@@ -7,7 +7,9 @@ import { build } from 'esbuild';
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
-const BUDGET = { js: 5 * 1024, css: 2 * 1024 };
+// A ceiling against accidental bloat (e.g. a bundled dependency), not a
+// target: 0.3.0 is ~4.6 KB JS / ~1.5 KB CSS.
+const BUDGET = { js: 20 * 1024, css: 5 * 1024 };
 
 const js = await build( {
 	entryPoints: [ 'build-module/index.js' ],

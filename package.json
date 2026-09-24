@@ -1,7 +1,7 @@
 {
   "name": "@lwplugins/data-table",
   "version": "0.3.0",
-  "description": "Lightweight data table for WordPress admin React screens: client or server-paged, filters, selection and bulk actions on core @wordpress/components. Under 5 KB gzipped \u2014 a small alternative to DataViews.",
+  "description": "Lightweight data table for WordPress admin React screens: client or server-paged, filters, selection and bulk actions on core @wordpress/components. ~5 KB gzipped \u2014 a small alternative to DataViews.",
   "license": "GPL-2.0-or-later",
   "author": "LW Plugins (https://lwplugins.com)",
   "homepage": "https://github.com/lwplugins/data-table#readme",

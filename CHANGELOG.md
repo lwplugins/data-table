@@ -13,7 +13,7 @@
 - `perPageOptions` rows-per-page select
 - Column `sortValue( row )`, `searchValue( row )` and `defaultSortDirection`
 - Polite, debounced result announcements
-- Size budget in CI (`npm run size`: JS ≤ 5 KB, CSS ≤ 2 KB gzipped)
+- Size ceiling in CI (`npm run size`: fails above 20 KB JS / 5 KB CSS gzipped; 0.3.0 is ~4.6 KB / ~1.5 KB)
 - Component tests with jsdom and an axe accessibility check
 
 ### Changed

@@ -4,8 +4,8 @@ Lightweight data table for WordPress admin React screens, built only on core
 `@wordpress/components`. Client-side or server-paged, with filters, row
 selection and bulk actions.
 
-**Under 5 KB gzipped** (JS, every feature included; CSS ~1.5 KB), checked in
-CI. `@wordpress/dataviews` has to be bundled by plugins (core does not ship
+**~4.6 KB gzipped** (JS, every feature included; CSS ~1.5 KB). CI fails the
+build above 20 KB JS / 5 KB CSS, so a bundled dependency cannot sneak in. `@wordpress/dataviews` has to be bundled by plugins (core does not ship
 it as a script) and weighs ~340–380 KB gzipped; this covers ordinary admin
 lists (bookings, customers, orders, logs) without that cost.
 
@@ -306,7 +306,7 @@ pickers. Use DataViews when you need those.
 ## Releasing
 
 Bump `version` in `package.json`, add the `CHANGELOG.md` entry, push to
-`main`. The Release workflow tests, checks the size budget, publishes to npm
+`main`. The Release workflow tests, checks the size ceiling, publishes to npm
 through trusted publishing (OIDC, no token or OTP) and creates the `vX.Y.Z`
 tag and GitHub release. Never tag or `npm publish` by hand.
 
