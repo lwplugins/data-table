@@ -1,176 +1,242 @@
 /**
  * WordPress dependencies
  */
-import { Button, SearchControl } from '@wordpress/components';
+import { Button } from '@wordpress/components';
+import { useEffect, useRef } from '@wordpress/element';
 
 /**
  * Internal dependencies
  */
-import { ArrowDown, ArrowUp } from './icons.js';
-import { Pager } from './pager.js';
 import { DEFAULT_LABELS } from './labels.js';
+import { DEFAULT_QUERY, createTableApi, isNarrowed } from './query.js';
+import { BulkBar } from './parts/bulk-bar.js';
+import { FilterGroup } from './parts/filter-group.js';
+import { Pager } from './parts/pager.js';
+import { PerPage } from './parts/per-page.js';
+import { SearchBox } from './parts/search-box.js';
+import { TableBody } from './parts/table-body.js';
+import { TableHead } from './parts/table-head.js';
+import { useAnnounce } from './parts/use-announce.js';
 
 /**
- * Sortable column header cell.
+ * Lightweight data table on core components. Two modes, one state shape:
  *
- * @param {Object} props
- * @param {Object} props.column Column definition.
- * @param {Object} props.table  useTableState() result.
+ * - Client: pass `table` from useTableState( rows ).
+ * - Server (controlled): pass `rows`, `total`, `totalPages`, `query`,
+ *   `onQueryChange` — fetch whatever `query` asks for.
+ *
+ * Every other feature (filters, toolbar, selection, bulk actions, per-page
+ * select, states) is opt-in.
+ *
+ * @param {Object} props See README for the full prop list.
  */
-function HeaderCell( { column, table } ) {
-	const sorted = table.sort?.field === column.id;
-	const asc = sorted && table.sort.direction === 'asc';
-	let ariaSort;
-	if ( sorted ) {
-		ariaSort = asc ? 'ascending' : 'descending';
+export function DataTable( props ) {
+	const {
+		columns,
+		filters = [],
+		toolbar,
+		caption,
+		getRowId = ( row ) => row.id,
+		getRowLabel,
+		pagination = 'bottom',
+		perPageOptions,
+		searchable = true,
+		isLoading = false,
+		error,
+		errorAction,
+		selection,
+		bulkActions = [],
+	} = props;
+	const labels = { ...DEFAULT_LABELS, ...props.labels };
+	const server = ! props.table;
+	const table =
+		props.table ||
+		createTableApi( props.query || DEFAULT_QUERY, props.onQueryChange, {
+			rows: props.rows || [],
+			total: props.total || 0,
+			totalPages: Math.max( 1, props.totalPages || 1 ),
+			page: ( props.query || DEFAULT_QUERY ).page,
+		} );
+	const searchDelay = props.searchDelay ?? ( server ? 300 : 0 );
+	const focusTarget = useRef();
+
+	// Page past the end (e.g. the last row of the last page was deleted):
+	// ask for the last page instead of showing an empty one.
+	const { page, totalPages } = table;
+	useEffect( () => {
+		if ( server && ! isLoading && page > totalPages ) {
+			table.setPage( totalPages );
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ server, isLoading, page, totalPages ] );
+
+	const announced = useAnnounce(
+		labels.results( table.total ),
+		`${ table.total }|${ table.page }|${ JSON.stringify( table.query ) }`,
+		isLoading
+	);
+
+	const showSkeleton = isLoading && ! table.rows.length;
+	const selectionApi = selection && {
+		isSelected: ( id ) => selection.selected.includes( id ),
+		toggle: ( id ) =>
+			selection.onChange(
+				selection.selected.includes( id )
+					? selection.selected.filter( ( item ) => item !== id )
+					: [ ...selection.selected, id ]
+			),
+		label: ( row ) =>
+			labels.selectRow(
+				getRowLabel ? getRowLabel( row ) : String( getRowId( row ) )
+			),
+	};
+	const pageIds = table.rows.map( getRowId );
+	const pageSelected = selection
+		? table.rows.filter( ( row ) =>
+				selection.selected.includes( getRowId( row ) )
+			)
+		: [];
+	const activeFilters = filters.filter(
+		( f ) => table.filters[ f.field ]?.length
+	);
+
+	const pager = (
+		<div className="lw-table__paging">
+			<span>{ labels.entries( table.total ) }</span>
+			{ perPageOptions && (
+				<PerPage
+					table={ table }
+					options={ perPageOptions }
+					label={ labels.perPage }
+				/>
+			) }
+			<Pager table={ table } labels={ labels } />
+		</div>
+	);
+
+	let empty = null;
+	if ( error ) {
+		empty = (
+			<div className="lw-table__error" role="alert">
+				<p>{ error }</p>
+				{ errorAction }
+			</div>
+		);
+	} else if ( ! isLoading && table.total === 0 ) {
+		empty = (
+			<p className="lw-table__empty">
+				{ isNarrowed( table.query ) ? labels.empty : labels.emptyAll }
+			</p>
+		);
 	}
 
 	return (
-		<th
-			scope="col"
-			aria-sort={ ariaSort }
-			className={ `is-${ column.align || 'start' }` }
-		>
-			{ column.sortable ? (
-				<button
-					type="button"
-					onClick={ () => table.toggleSort( column.id ) }
-				>
-					{ column.label }
-					{ sorted && ( asc ? <ArrowUp /> : <ArrowDown /> ) }
-				</button>
-			) : (
-				column.label
-			) }
-		</th>
-	);
-}
-
-/**
- * Lightweight data table on core components: search, filter chips, sortable
- * headers, paging. Pair it with useTableState(); style with style.css.
- *
- * @param {Object}   props
- * @param {Array}    props.columns    { id, label, render?, sortable?, align? }.
- * @param {Object}   props.table      useTableState() result.
- * @param {Array}    props.filters    Chip options { value, label } (optional).
- * @param {string}   props.caption    Table caption (screen readers).
- * @param {Object}   props.labels     Translated UI strings (see DEFAULT_LABELS).
- * @param {Function} props.getRowId   Row key (default: row.id).
- * @param {string}   props.pagination Where the pager shows: 'bottom' (default), 'top' or 'both'.
- */
-export function DataTable( {
-	columns,
-	table,
-	filters = [],
-	caption,
-	labels: customLabels,
-	getRowId = ( row ) => row.id,
-	pagination = 'bottom',
-} ) {
-	const labels = { ...DEFAULT_LABELS, ...customLabels };
-	const showTop = pagination === 'top' || pagination === 'both';
-	const showBottom = pagination !== 'top';
-
-	return (
-		<div className="lw-table">
+		<div className="lw-table" aria-busy={ isLoading || undefined }>
 			<div className="lw-table__toolbar">
-				<SearchControl
-					__nextHasNoMarginBottom
-					size="compact"
-					label={ labels.search }
-					placeholder={ labels.search }
-					value={ table.search }
-					onChange={ table.setSearch }
-				/>
-				{ filters.length > 0 && (
-					<div
-						className="lw-table__chips"
-						role="group"
-						aria-label={ labels.filter }
+				{ searchable && (
+					<SearchBox
+						value={ table.search }
+						onChange={ table.setSearch }
+						delay={ searchDelay }
+						label={ labels.search }
+					/>
+				) }
+				{ filters.map( ( filter ) => (
+					<FilterGroup
+						key={ filter.field }
+						filter={ filter }
+						table={ table }
+						labels={ labels }
+					/>
+				) ) }
+				{ activeFilters.length > 1 && (
+					<Button
+						variant="link"
+						className="lw-table__clear"
+						onClick={ () => table.clearFilters() }
 					>
-						{ filters.map( ( option ) => (
-							<button
-								key={ option.value }
-								type="button"
-								className="lw-table__chip"
-								aria-pressed={ table.filter.includes(
-									option.value
-								) }
-								onClick={ () =>
-									table.toggleFilter( option.value )
-								}
-							>
-								{ option.label }
-							</button>
-						) ) }
-						{ table.filter.length > 0 && (
-							<Button
-								variant="link"
-								onClick={ table.clearFilter }
-							>
-								{ labels.clear }
-							</Button>
-						) }
-					</div>
+						{ labels.clearAll }
+					</Button>
 				) }
-				{ showTop && (
-					<div className="lw-table__top-pager">
-						<span>{ labels.entries( table.total ) }</span>
-						<Pager table={ table } labels={ labels } />
-					</div>
-				) }
+				{ toolbar && <div className="lw-table__slot">{ toolbar }</div> }
+				{ ( pagination === 'top' || pagination === 'both' ) && pager }
 			</div>
 
-			<div className="lw-table__scroll">
-				<table>
+			{ selection && selection.selected.length > 0 && (
+				<BulkBar
+					actions={ bulkActions }
+					selected={ selection.selected }
+					pageRows={ pageSelected }
+					onClear={ () => selection.onChange( [] ) }
+					labels={ labels }
+					focusTarget={ focusTarget }
+				/>
+			) }
+
+			{ /* Scrollable region: focusable so keyboard users can scroll it. */ }
+			<div
+				className={ `lw-table__scroll${ isLoading && ! showSkeleton ? ' is-loading' : '' }` }
+				role="region"
+				aria-label={ caption || labels.search }
+				tabIndex={ 0 }
+				ref={ focusTarget }
+			>
+				<table role="table">
 					{ caption && (
 						<caption className="lw-table__caption">
 							{ caption }
 						</caption>
 					) }
-					<thead>
-						<tr>
-							{ columns.map( ( column ) => (
-								<HeaderCell
-									key={ column.id }
-									column={ column }
-									table={ table }
-								/>
-							) ) }
-						</tr>
-					</thead>
-					<tbody>
-						{ table.rows.map( ( row ) => (
-							<tr key={ getRowId( row ) }>
-								{ columns.map( ( column ) => (
-									<td
-										key={ column.id }
-										className={ `is-${
-											column.align || 'start'
-										}` }
-										data-label={ column.label }
-									>
-										{ column.render
-											? column.render( row )
-											: row[ column.id ] }
-									</td>
-								) ) }
-							</tr>
-						) ) }
-					</tbody>
+					<TableHead
+						columns={ columns }
+						table={ table }
+						selectAll={
+							selection && {
+								checked: pageSelected.length,
+								total: pageIds.length,
+								label: labels.selectAll,
+								onChange: ( all ) =>
+									selection.onChange(
+										all
+											? [
+													...new Set( [
+														...selection.selected,
+														...pageIds,
+													] ),
+												]
+											: selection.selected.filter(
+													( id ) =>
+														! pageIds.includes( id )
+												)
+									),
+							}
+						}
+					/>
+					{ ! error && (
+						<TableBody
+							columns={ columns }
+							rows={ table.rows }
+							getRowId={ getRowId }
+							showSkeleton={ showSkeleton }
+							skeletonRows={ Math.min( table.perPage || 5, 5 ) }
+							selection={ selectionApi }
+						/>
+					) }
 				</table>
-				{ table.total === 0 && (
-					<p className="lw-table__empty">{ labels.empty }</p>
-				) }
+				{ empty }
 			</div>
 
-			{ showBottom && (
-				<div className="lw-table__foot">
-					<span>{ labels.entries( table.total ) }</span>
-					<Pager table={ table } labels={ labels } />
-				</div>
+			{ pagination !== 'top' && (
+				<div className="lw-table__foot">{ pager }</div>
 			) }
+
+			<div
+				className="lw-table__live"
+				aria-live="polite"
+				aria-atomic="true"
+			>
+				{ announced }
+			</div>
 		</div>
 	);
 }

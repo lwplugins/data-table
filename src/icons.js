@@ -2,11 +2,13 @@
  * Inline stroke icons (paths from `@wordpress/icons` 17, GPL-2.0-or-later),
  * kept inline so the package has no bundled dependency.
  *
- * @param {string} d    Path data.
- * @param {number} size Pixel size.
+ * @param {string} d         Path data.
+ * @param {number} size      Pixel size.
+ * @param {string} className Optional class (e.g. for RTL flipping).
  */
-const icon = ( d, size ) => (
+const icon = ( d, size, className ) => (
 	<svg
+		className={ className }
 		width={ size }
 		height={ size }
 		viewBox="0 0 24 24"
@@ -27,7 +29,9 @@ export const ArrowDown = ( { size = 16 } ) =>
 	icon( 'M12 4V19M7 14L12 19L17 14', size );
 
 export const ChevronLeft = ( { size = 24 } ) =>
-	icon( 'M14 6.5L9 12L14 17.5', size );
+	icon( 'M14 6.5L9 12L14 17.5', size, 'lw-table__flip' );
 
 export const ChevronRight = ( { size = 24 } ) =>
-	icon( 'M10 6.5L15 12L10 17.5', size );
+	icon( 'M10 6.5L15 12L10 17.5', size, 'lw-table__flip' );
+
+export const Check = ( { size = 14 } ) => icon( 'M5 12.5L9.5 17L19 7.5', size );
