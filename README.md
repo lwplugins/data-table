@@ -134,6 +134,13 @@ Grid/list layouts, column hiding and reordering, bulk actions, server-side
 paging of very large datasets, or DataForm integration. This package is
 intentionally small; server-side mode is on the roadmap.
 
+## Releasing
+
+Bump `version` in `package.json`, add the `CHANGELOG.md` entry, push to
+`main`. The Release workflow publishes to npm through trusted publishing
+(OIDC, no token or OTP) and creates the `vX.Y.Z` tag and GitHub release.
+Never tag or `npm publish` by hand.
+
 ## License
 
 GPL-2.0-or-later
