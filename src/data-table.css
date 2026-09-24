@@ -153,6 +153,15 @@
 	font-size: 12px;
 }
 
+.lw-table__top-pager {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-left: auto;
+	color: var(--lw-table-muted);
+	font-size: 12px;
+}
+
 .lw-table__pager {
 	display: flex;
 	align-items: center;
@@ -202,5 +211,11 @@
 
 	.lw-table__toolbar .components-search-control {
 		flex-basis: 100%;
+	}
+
+	.lw-table__top-pager {
+		justify-content: space-between;
+		width: 100%;
+		margin-left: 0;
 	}
 }

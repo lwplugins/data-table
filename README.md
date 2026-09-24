@@ -111,6 +111,7 @@ Returns `rows` (current page), `total`, `page`, `totalPages`, `search`,
 | `caption` | `string` | Table caption for screen readers |
 | `labels` | `Object` | Translated strings, see `DEFAULT_LABELS` |
 | `getRowId` | `( row ) => key` | Row key (default `row.id`) |
+| `pagination` | `'bottom' \| 'top' \| 'both'` | Where the pager shows (default `'bottom'`) |
 
 ### `filterSortPaginate( rows, state, options )`
 

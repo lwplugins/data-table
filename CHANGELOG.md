@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0] - 2026-09-24
+
+### Added
+- `pagination` prop on `DataTable`: `'bottom'` (default), `'top'` or `'both'`; the top pager sits at the right end of the toolbar with the entry count
+
+### Changed
+- Pager extracted into its own component (no visual change)
+
 ## [0.1.0] - 2026-09-24
 
 ### Added

@@ -6,7 +6,8 @@ import { Button, SearchControl } from '@wordpress/components';
 /**
  * Internal dependencies
  */
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight } from './icons.js';
+import { ArrowDown, ArrowUp } from './icons.js';
+import { Pager } from './pager.js';
 import { DEFAULT_LABELS } from './labels.js';
 
 /**
@@ -50,12 +51,13 @@ function HeaderCell( { column, table } ) {
  * headers, paging. Pair it with useTableState(); style with style.css.
  *
  * @param {Object}   props
- * @param {Array}    props.columns  { id, label, render?, sortable?, align? }.
- * @param {Object}   props.table    useTableState() result.
- * @param {Array}    props.filters  Chip options { value, label } (optional).
- * @param {string}   props.caption  Table caption (screen readers).
- * @param {Object}   props.labels   Translated UI strings (see DEFAULT_LABELS).
- * @param {Function} props.getRowId Row key (default: row.id).
+ * @param {Array}    props.columns    { id, label, render?, sortable?, align? }.
+ * @param {Object}   props.table      useTableState() result.
+ * @param {Array}    props.filters    Chip options { value, label } (optional).
+ * @param {string}   props.caption    Table caption (screen readers).
+ * @param {Object}   props.labels     Translated UI strings (see DEFAULT_LABELS).
+ * @param {Function} props.getRowId   Row key (default: row.id).
+ * @param {string}   props.pagination Where the pager shows: 'bottom' (default), 'top' or 'both'.
  */
 export function DataTable( {
 	columns,
@@ -64,8 +66,11 @@ export function DataTable( {
 	caption,
 	labels: customLabels,
 	getRowId = ( row ) => row.id,
+	pagination = 'bottom',
 } ) {
 	const labels = { ...DEFAULT_LABELS, ...customLabels };
+	const showTop = pagination === 'top' || pagination === 'both';
+	const showBottom = pagination !== 'top';
 
 	return (
 		<div className="lw-table">
@@ -107,6 +112,12 @@ export function DataTable( {
 								{ labels.clear }
 							</Button>
 						) }
+					</div>
+				) }
+				{ showTop && (
+					<div className="lw-table__top-pager">
+						<span>{ labels.entries( table.total ) }</span>
+						<Pager table={ table } labels={ labels } />
 					</div>
 				) }
 			</div>
@@ -154,28 +165,12 @@ export function DataTable( {
 				) }
 			</div>
 
-			<div className="lw-table__foot">
-				<span>{ labels.entries( table.total ) }</span>
-				<div className="lw-table__pager">
-					<Button
-						size="compact"
-						icon={ <ChevronLeft /> }
-						label={ labels.previous }
-						disabled={ table.page <= 1 }
-						accessibleWhenDisabled
-						onClick={ () => table.setPage( table.page - 1 ) }
-					/>
-					<span>{ labels.page( table.page, table.totalPages ) }</span>
-					<Button
-						size="compact"
-						icon={ <ChevronRight /> }
-						label={ labels.next }
-						disabled={ table.page >= table.totalPages }
-						accessibleWhenDisabled
-						onClick={ () => table.setPage( table.page + 1 ) }
-					/>
+			{ showBottom && (
+				<div className="lw-table__foot">
+					<span>{ labels.entries( table.total ) }</span>
+					<Pager table={ table } labels={ labels } />
 				</div>
-			</div>
+			) }
 		</div>
 	);
 }
